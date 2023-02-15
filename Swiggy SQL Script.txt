@@ -1,0 +1,138 @@
+										--Swiggy Case Study--
++++++++++++++++++++++++++++++++++++++++++++++
++ Q1. Find the customers who never ordered. +
++++++++++++++++++++++++++++++++++++++++++++++
+
+			-- Appraoch 1
+SELECT * 
+FROM users 
+WHERE user_id NOT IN (SELECT user_id FROM orders);
+
+			-- Appraoch 2
+SELECT u.name
+FROM users u LEFT JOIN orders o
+ON u.user_id = o.user_id
+WHERE o.user_id IS NULL;
+
+
+++++++++++++++++++++++++++
++ Q2. Average price/dish +
+++++++++++++++++++++++++++
+
+SELECT f.f_name,
+ROUND(AVG(price)) AS avg_price
+FROM menu m INNER JOIN food f
+ON m.f_id = f.f_id
+GROUP BY f.f_id
+ORDER BY avg_price DESC;
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ Q3. Find top restaurant in terms of number of orders for a given month +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+SELECT r.r_name AS restaurant_name,
+COUNT(*) as num_of_orders 
+FROM orders o INNER JOIN restaurants r
+ON o.r_id = r.r_id
+WHERE EXTRACT(MONTH FROM order_date) = 6
+GROUP BY r.r_id
+ORDER BY num_of_orders DESC
+LIMIT 1;
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ Q4. Restaurants with monthly sales > x ('x' in rupees) +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+SELECT r.r_name,
+	SUM(o.amount) AS revenue
+	FROM orders o INNER JOIN restaurants r
+	ON o.r_id = r.r_id
+	WHERE TO_CHAR(order_date,'Mon') LIKE 'Jun'
+	GROUP BY r.r_id HAVING SUM(o.amount) > 900
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ Q5. Show all orders with order details for a particular customer in a particular date range +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+SELECT o.order_id,
+r.r_name AS "Restaurant Name",
+f.f_name AS "Food"
+FROM orders o INNER JOIN restaurants r
+ON o.r_id = r.r_id
+INNER JOIN order_details od
+ON o.order_id = od.order_id
+INNER JOIN food f
+ON od.f_id = f.f_id
+WHERE user_id = (SELECT user_id FROM users WHERE name LIKE 'Ankit')
+AND order_date BETWEEN '2022-06-10' AND '2022-07-10';
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ Q6. Find most loyal customers for all restaurants +
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+SELECT r.r_name AS "Restaurants Name",
+u.name AS "Customer Name",
+"Number of visits"
+FROM
+	(SELECT user_id, r_id,COUNT(*) AS "Number of visits" 
+	from orders
+	GROUP BY user_id,r_id
+	HAVING COUNT(*)>1)t 
+INNER JOIN users u 
+ON t.user_id = u.user_id
+INNER JOIN restaurants r
+ON t.r_id = r.r_id;
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ Q7. Find restaurants with maximum repeated customers (Loyal customers) +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+SELECT r.r_name AS "Restaurants Name", COUNT(*) AS "Loyal Customers" 
+FROM
+	(SELECT r_id, user_id, COUNT(*) AS "visits"
+	FROM orders 
+	GROUP BY user_id,r_id
+	HAVING COUNT(*) > 1
+) t
+INNER JOIN restaurants r 
+ON t.r_id = r.r_id
+GROUP BY r.r_id
+HAVING COUNT(*)>1
+ORDER BY "Loyal Customers" DESC
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ Q8. Month over month revenue growth of swiggy (in percentage) +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+select months, round((((revenue-prev)/prev)*100)) as "Growth %"
+from (
+		with sales as
+			(select to_char(order_date,'Mon') as "months", 
+			sum(amount) as "revenue"
+			from orders
+			group by months)
+
+		select *,lag(revenue,1) over(order by revenue) as prev
+		from sales
+	  ) as t
+
++++++++++++++++++++++++++++++++
++ Q9. Customer favourite food +
++++++++++++++++++++++++++++++++
+
+WITH Temp AS
+		(SELECT o.user_id, od.f_id, COUNT(*) AS frequency
+		FROM orders o INNER JOIN order_details od
+		ON o.order_id = od.order_id
+		GROUP BY o.user_id,od.f_id)
+	
+SELECT u.name, f.f_name, frequency
+FROM temp t1 INNER JOIN users u
+ON t1.user_id = u.user_id
+JOIN food f
+ON t1.f_id = f.f_id
+WHERE frequency = (SELECT MAX(frequency) FROM temp t2 WHERE t2.user_id=t1.user_id);
+
+
+

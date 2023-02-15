@@ -1,0 +1,76 @@
++++++++++++++++++++++++
++ User Table Stucture +
++++++++++++++++++++++++
+
+CREATE TABLE IF NOT EXISTS users(
+				user_id int,
+				name varchar(20),
+				email varchar(50),
+				password varchar(20),
+	CONSTRAINT user_id_pk PRIMARY KEY (user_id)
+);
+
+++++++++++++++++++++++++++++++
++ Restaurants Table Stucture +
+++++++++++++++++++++++++++++++
+
+CREATE TABLE IF NOT EXISTS restaurants(
+		r_id int,
+		r_name varchar(50),
+		cuisine varchar(50),
+		rating float,
+	CONSTRAINT r_id_pk PRIMARY KEY (r_id)
+);
+
++++++++++++++++++++++++
++ Food Table Stucture +
++++++++++++++++++++++++
+
+CREATE TABLE IF NOT EXISTS food(
+		f_id int,
+		f_name varchar(50),
+		type varchar(20),
+	CONSTRAINT f_id_pk PRIMARY KEY (f_id)
+);
+
++++++++++++++++++++++++
++ Menu Table Stucture +
++++++++++++++++++++++++
+
+CREATE TABLE IF NOT EXISTS menu(
+		menu_id int,
+		r_id int,
+		f_id int,
+		price float,
+	CONSTRAINT menu_id_pk PRIMARY KEY (menu_id),
+	CONSTRAINT r_id_fk FOREIGN KEY (r_id) REFERENCES restaurants(r_id),
+	CONSTRAINT f_id_fk FOREIGN KEY (f_id) REFERENCES food(f_id)
+);
+
+++++++++++++++++++++++++++
++ Orders Table Structure +
+++++++++++++++++++++++++++
+
+CREATE TABLE IF NOT EXISTS orders(
+			order_id int,
+			user_id int,
+			r_id int,
+			amount float,
+			order_date date,
+	CONSTRAINT order_id_pk PRIMARY KEY (order_id),
+	CONSTRAINT user_id_fk FOREIGN KEY (user_id) REFERENCES users(user_id),
+	CONSTRAINT r_id_fk FOREIGN KEY (r_id) REFERENCES restaurants(r_id)
+);
+
++++++++++++++++++++++++++++++++++
++ Order_details Table Structure +
++++++++++++++++++++++++++++++++++
+
+CREATE TABLE IF NOT EXISTS order_details(
+	id int,
+	order_id int,
+	f_id int,
+	CONSTRAINT id_pk PRIMARY KEY (id),
+	CONSTRAINT order_id_fk FOREIGN KEY (order_id) REFERENCES orders(order_id),
+	CONSTRAINT f_id_fk FOREIGN KEY (f_id) REFERENCES food(f_id)
+);
